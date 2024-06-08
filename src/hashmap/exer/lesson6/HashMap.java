@@ -1,15 +1,14 @@
-package hashmap.exer.sherzod;
+package hashmap.exer.lesson6;
 
-import org.w3c.dom.Node;
-
-import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-public class HashMap<K, V> {
+public class HashMap<K, V> implements Iterable<HashMap.Entry<K, V>> {
     private static final int DEFAULT_CAPACITY = 16;
     private static final double DEFAULT_LOAD_FACTOR = 0.75;
     private Node<K, V>[] table;
-    private double loadFactor;
+    private final double loadFactor;
     private int size;
 
     public HashMap() {
@@ -20,6 +19,7 @@ public class HashMap<K, V> {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
+    @SuppressWarnings("unchecked")
     public HashMap(int initialCapacity, double loadFactor) {
         this.table = new Node[initialCapacity];
         this.loadFactor = loadFactor;
@@ -32,16 +32,17 @@ public class HashMap<K, V> {
         if (size >= (int) (table.length * loadFactor)) {
             grow();
         }
-        int index = hashIndex(key);
+        int hash = Objects.hash(key);
+        int index = hashIndex(hash);
         Node<K, V> node = table[index];
         if (node == null) {
-            table[index] = new Node<>(key, value);
+            table[index] = new Node<>(hash, key, value);
             size++;
             return null;
         }
         Node<K, V> prev = null;
         while (node != null) {
-            if (node.item.key.equals(key)) {
+            if (node.hash == hash && Objects.equals(key, node.item.key)) {
                 V oldValue = node.item.value;
                 node.item.value = value;
                 return oldValue;
@@ -49,7 +50,8 @@ public class HashMap<K, V> {
             prev = node;
             node = node.next;
         }
-        prev.next = new Node<>(key, value);
+        size++;
+        prev.next = new Node<>(hash, key, value);
         return null;
     }
 
@@ -68,6 +70,22 @@ public class HashMap<K, V> {
     }
 
     @Override
+    public Iterator<Entry<K, V>> iterator() {
+        return new HashMapIterator<>(table, getSize());
+    }
+
+
+    public void forEach(BiConsumer<K, V> action) {
+        for (Node<K, V> node : table) {
+            Node<K, V> currentNode = node;
+            while (currentNode != null) {
+                action.accept(currentNode.item.key, currentNode.item.value);
+                currentNode = currentNode.next;
+            }
+        }
+    }
+
+    @Override
     public String toString() {
         StringJoiner joiner = new StringJoiner(", ", "[", "]");
         for (Node<K, V> node : table) {
@@ -79,11 +97,8 @@ public class HashMap<K, V> {
         return joiner.toString();
     }
 
-    private int hashIndex(K key) {
-        if (key == null) {
-            throw new IllegalArgumentException("key can not be null");
-        }
-        return Objects.hash(key) % table.length;
+    private int hashIndex(int hash) {
+        return hash % table.length;
     }
 
     public Set<Entry<K, V>> getKeySet() {
@@ -98,7 +113,8 @@ public class HashMap<K, V> {
         return keys;
     }
 
-    class Node<K, V> {
+    static class Node<K, V> {
+        int hash;
         Entry<K, V> item;
         Node<K, V> next;
 
@@ -106,7 +122,8 @@ public class HashMap<K, V> {
             this.item = entry;
         }
 
-        Node(K key, V value) {
+        Node(int hash, K key, V value) {
+            this.hash = Objects.hash(key);
             this.item = new Entry<>(key, value);
         }
 
@@ -136,5 +153,4 @@ public class HashMap<K, V> {
             return key + "=" + value;
         }
     }
-
 }
