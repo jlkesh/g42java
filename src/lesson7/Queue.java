@@ -38,9 +38,7 @@ public class Queue<T> {
             throw new IllegalStateException("queue is empty");
         }
         T element = (T) elements[0];
-        Object[] temp = new Object[elements.length];
-        System.arraycopy(elements, 1, temp, 0, size--);
-        this.elements = temp;
+        System.arraycopy(elements, 1, elements, 0, size--);
         return element;
     }
 
